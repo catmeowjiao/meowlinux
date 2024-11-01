@@ -1,0 +1,39 @@
+#!/bin/sh
+
+echo "Initializing..."
+
+echo "Installing busybox..."
+for package in $(busybox --list); do
+    busybox ln -sf /usr/bin/busybox /usr/bin/$package
+done
+echo
+
+echo "Mounting filesystems..."
+/bin/mount -a
+mkdir /dev/pts
+mount -t devpts devpts /dev/pts
+mkdir /dev/shm
+mount -t tmpfs tmpfs /dev/shm
+ln -s /proc/self/fd /dev/fd
+ln -s /dev/fd/0 /dev/stdin
+ln -s /dev/fd/1 /dev/stdout
+ln -s /dev/fd/2 /dev/stderr
+echo
+
+echo "Installing core packages..."
+for package in $(cat /etc/packageslistcore); do
+	echo -n "${package} "
+	tar -xf /var/packages/${package}.tar.xz
+done
+echo
+
+echo "Starting services..."
+for service in $(cat /etc/serviceslist); do
+	printf "${service} "
+	sh /var/services/${service}
+done
+echo
+
+echo "The initialization stage is completed within $(cat /proc/uptime | cut -d ' ' -f 1) seconds."
+
+echo "Starting getty..."
